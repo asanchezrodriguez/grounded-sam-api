@@ -236,7 +236,7 @@ def run_grounded_sam(image_path, text_prompt, task_type, inpaint_prompt, box_thr
         plt.imshow(image)
         for mask in masks:
             show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
-            mask_rle = mask_rle + maskUtils.encode(np.asfortranarray(mask))
+            mask_rle = mask_rle + "; " + str(maskUtils.encode(np.asfortranarray(mask)))
         for box, label in zip(boxes_filt, pred_phrases):
             show_box(box.numpy(), plt.gca(), label)
         plt.axis('off')
@@ -296,9 +296,7 @@ if __name__ == "__main__":
                     type="pil",
                 ).style(full_width=True, full_height=True)
 
-                output_text = gr.outputs.Textbox(
-                    type="text"
-                )
+                output_text = gr.outputs.Textbox(label="Concatenated Masks RLE strings")
 
         run_button.click(fn=run_grounded_sam, inputs=[input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, load_model], outputs=[gallery, output_text])
 
