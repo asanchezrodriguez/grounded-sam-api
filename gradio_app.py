@@ -1,4 +1,5 @@
 import gradio as gr
+import pycocotools.mask as maskUtils
 
 import argparse
 import os
@@ -29,6 +30,8 @@ import torch
 from io import BytesIO
 from diffusers import StableDiffusionInpaintPipeline
 from huggingface_hub import hf_hub_download
+
+mask_rle = ""
 
 def load_model_hf(model_config_path, repo_id, filename, device='cpu'):
     args = SLConfig.fromfile(model_config_path) 
@@ -211,6 +214,8 @@ def run_grounded_sam(image_path, text_prompt, task_type, inpaint_prompt, box_thr
             multimask_output = False,
         )
 
+        mask_rle = maskUtils.encode(np.asfortranarray(mask))
+
         # masks: [1, 1, 512, 512]
 
     if task_type == 'det':
@@ -291,6 +296,9 @@ if __name__ == "__main__":
                 gallery = gr.outputs.Image(
                     type="pil",
                 ).style(full_width=True, full_height=True)
+
+                output_text = gr.outputs.Text(label="Mask RLE")
+                gr.Interface(fn=lambda x: mask_rle, inputs=None, outputs=output_text).launch()
 
         run_button.click(fn=run_grounded_sam, inputs=[input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, load_model], outputs=[gallery])
 
