@@ -31,8 +31,6 @@ from io import BytesIO
 from diffusers import StableDiffusionInpaintPipeline
 from huggingface_hub import hf_hub_download
 
-mask_rle = ""
-
 def load_model_hf(model_config_path, repo_id, filename, device='cpu'):
     args = SLConfig.fromfile(model_config_path) 
     model = build_model(args)
@@ -214,7 +212,7 @@ def run_grounded_sam(image_path, text_prompt, task_type, inpaint_prompt, box_thr
             multimask_output = False,
         )
 
-        mask_rle = maskUtils.encode(np.asfortranarray(mask))
+        mask_rle = ""
 
         # masks: [1, 1, 512, 512]
 
@@ -238,13 +236,14 @@ def run_grounded_sam(image_path, text_prompt, task_type, inpaint_prompt, box_thr
         plt.imshow(image)
         for mask in masks:
             show_mask(mask.cpu().numpy(), plt.gca(), random_color=True)
+            mask_rle = mask_rle + maskUtils.encode(np.asfortranarray(mask))
         for box, label in zip(boxes_filt, pred_phrases):
             show_box(box.numpy(), plt.gca(), label)
         plt.axis('off')
         image_path = os.path.join(output_dir, "grounding_dino_output.jpg")
         plt.savefig(image_path, bbox_inches="tight")
         image_result = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-        return image_result
+        return image_result, mask_rle
     elif task_type == 'inpainting':
         assert inpaint_prompt, 'inpaint_prompt is not found!'
         # inpainting pipeline
@@ -263,7 +262,7 @@ def run_grounded_sam(image_path, text_prompt, task_type, inpaint_prompt, box_thr
         image_path = os.path.join(output_dir, "grounded_sam_inpainting_output.jpg")
         image.save(image_path)
         image_result = cv2.cvtColor(cv2.imread(image_path), cv2.COLOR_BGR2RGB)
-        return image_result
+        return image_result, mask_rle
     else:
         print("task_type:{} error!".format(task_type))
 
@@ -297,10 +296,12 @@ if __name__ == "__main__":
                     type="pil",
                 ).style(full_width=True, full_height=True)
 
-                output_text = gr.outputs.Text(label="Mask RLE")
-                gr.Interface(fn=lambda x: mask_rle, inputs=None, outputs=output_text).launch()
+                output_text = gr.outputs.Textbox(
+                    type="text",
+                    value="Mask in RLE will update here..."
+                )
 
-        run_button.click(fn=run_grounded_sam, inputs=[input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, load_model], outputs=[gallery])
+        run_button.click(fn=run_grounded_sam, inputs=[input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, load_model], outputs=[gallery, output_text])
 
 
     block.launch(server_name='127.0.0.1', server_port=7860, debug=args.debug, share=args.share)
