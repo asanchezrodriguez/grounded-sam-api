@@ -297,8 +297,7 @@ if __name__ == "__main__":
                 ).style(full_width=True, full_height=True)
 
                 output_text = gr.outputs.Textbox(
-                    type="text",
-                    value="Mask in RLE will update here..."
+                    type="text"
                 )
 
         run_button.click(fn=run_grounded_sam, inputs=[input_image, text_prompt, task_type, inpaint_prompt, box_threshold, text_threshold, load_model], outputs=[gallery, output_text])
