@@ -13,6 +13,7 @@ from GroundingDINO.groundingdino.models import build_model
 from GroundingDINO.groundingdino.util import box_ops
 from GroundingDINO.groundingdino.util.slconfig import SLConfig
 from GroundingDINO.groundingdino.util.utils import clean_state_dict, get_phrases_from_posmap
+from huggingface_hub import hf_hub_download
 
 # segment anything
 from segment_anything import build_sam, SamPredictor 
@@ -20,6 +21,17 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+def load_model_hf(model_config_path, repo_id, filename, device='cpu'):
+    args = SLConfig.fromfile(model_config_path) 
+    model = build_model(args)
+    args.device = device
+
+    cache_file = hf_hub_download(repo_id=repo_id, filename=filename)
+    checkpoint = torch.load(cache_file, map_location='cpu')
+    log = model.load_state_dict(clean_state_dict(checkpoint['model']), strict=False)
+    print("Model loaded from {} \n => {}".format(cache_file, log))
+    _ = model.eval()
+    return model   
 
 def load_image(image_path):
     # load image
@@ -134,10 +146,14 @@ def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, outp
     # load image
     image_pil, image = load_image(image_path)
     # load model
-    model = load_model(config_file, grounded_checkpoint, device=device)
+    #model = load_model(config_file, grounded_checkpoint, device=device)
+
+    ckpt_repo_id = "camenduru/GroundingDINO"
+    ckpt_filenmae = "groundingdino_swint_ogc.pth"
+    model = load_model_hf(config_file, ckpt_repo_id, ckpt_filenmae)
 
     # visualize raw image
-    #image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
+    image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
 
     # run grounding dino model
     boxes_filt, pred_phrases = get_grounding_output(

@@ -16,8 +16,8 @@ async def mask(request: Request):
     sam_checkpoint = "/content/sam_vit_h_4b8939.pth"
     image_path = data.get('image_path')
     output_dir = data.get('output_dir')
-    box_threshold = ""
-    text_threshold = ""
+    box_threshold = 0.3
+    text_threshold = 0.25
     text_prompt = data.get('text_prompt')
     device  = "cuda"
 
