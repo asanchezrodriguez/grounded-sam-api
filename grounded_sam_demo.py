@@ -126,50 +126,18 @@ def save_mask_data(output_dir, mask_list, box_list, label_list):
         })
     with open(os.path.join(output_dir, 'mask.json'), 'w') as f:
         json.dump(json_data, f)
+
+def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, output_dir, box_threshold, text_threshold, text_prompt, device):
     
-
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser("Grounded-Segment-Anything Demo", add_help=True)
-    parser.add_argument("--config", type=str, required=True, help="path to config file")
-    parser.add_argument(
-        "--grounded_checkpoint", type=str, required=True, help="path to checkpoint file"
-    )
-    parser.add_argument(
-        "--sam_checkpoint", type=str, required=True, help="path to checkpoint file"
-    )
-    parser.add_argument("--input_image", type=str, required=True, help="path to image file")
-    parser.add_argument("--text_prompt", type=str, required=True, help="text prompt")
-    parser.add_argument(
-        "--output_dir", "-o", type=str, default="outputs", required=True, help="output directory"
-    )
-
-    parser.add_argument("--box_threshold", type=float, default=0.3, help="box threshold")
-    parser.add_argument("--text_threshold", type=float, default=0.25, help="text threshold")
-
-    parser.add_argument("--device", type=str, default="cpu", help="running on cpu only!, default=False")
-    args = parser.parse_args()
-
-    # cfg
-    config_file = args.config  # change the path of the model config file
-    grounded_checkpoint = args.grounded_checkpoint  # change the path of the model
-    sam_checkpoint = args.sam_checkpoint
-    image_path = args.input_image
-    text_prompt = args.text_prompt
-    output_dir = args.output_dir
-    box_threshold = args.box_threshold
-    text_threshold = args.box_threshold
-    device = args.device
-
     # make dir
-    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True) # output_dir placed in the gdrive
     # load image
     image_pil, image = load_image(image_path)
     # load model
     model = load_model(config_file, grounded_checkpoint, device=device)
 
     # visualize raw image
-    image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
+    #image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
 
     # run grounding dino model
     boxes_filt, pred_phrases = get_grounding_output(
@@ -214,4 +182,44 @@ if __name__ == "__main__":
     )
 
     save_mask_data(output_dir, masks, boxes_filt, pred_phrases)
+    
+    return len(masks)
+
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser("Grounded-Segment-Anything Demo", add_help=True)
+    parser.add_argument("--config", type=str, required=True, help="path to config file")
+    parser.add_argument(
+        "--grounded_checkpoint", type=str, required=True, help="path to checkpoint file"
+    )
+    parser.add_argument(
+        "--sam_checkpoint", type=str, required=True, help="path to checkpoint file"
+    )
+    parser.add_argument("--input_image", type=str, required=True, help="path to image file")
+    parser.add_argument("--text_prompt", type=str, required=True, help="text prompt")
+    parser.add_argument(
+        "--output_dir", "-o", type=str, default="outputs", required=True, help="output directory"
+    )
+
+    parser.add_argument("--box_threshold", type=float, default=0.3, help="box threshold")
+    parser.add_argument("--text_threshold", type=float, default=0.25, help="text threshold")
+
+    parser.add_argument("--device", type=str, default="cpu", help="running on cpu only!, default=False")
+    args = parser.parse_args()
+
+    # cfg
+    config_file = args.config  # change the path of the model config file
+    grounded_checkpoint = args.grounded_checkpoint  # change the path of the model
+    sam_checkpoint = args.sam_checkpoint
+    image_path = args.input_image
+    text_prompt = args.text_prompt
+    output_dir = args.output_dir
+    box_threshold = args.box_threshold
+    text_threshold = args.box_threshold
+    device = args.device
+
+    gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, output_dir, box_threshold, text_threshold, text_prompt, device)
+
+    
 
