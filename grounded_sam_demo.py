@@ -111,16 +111,24 @@ def show_box(box, ax, label):
     ax.text(x0, y0, label)
 
 
-def save_mask_data(output_dir, mask_list, box_list, label_list):
+def save_mask_data(image, output_dir, mask_list, box_list, label_list):
     value = 0  # 0 for background
-
+    
     mask_img = torch.zeros(mask_list.shape[-2:])
+
     for idx, mask in enumerate(mask_list):
         mask_img[mask.cpu().numpy()[0] == True] = value + idx + 1
-    plt.figure(figsize=(10, 10))
-    plt.imshow(mask_img.numpy())
-    plt.axis('off')
-    plt.savefig(os.path.join(output_dir, 'mask.jpg'), bbox_inches="tight", dpi=300, pad_inches=0.0)
+    
+    masked_image = np.copy(image)
+    masked_image[mask_img == 0] = [255, 255, 255]
+
+    rgb_mask = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
+    cv2.imwrite(os.path.join(output_dir, 'mask.jpg'), rgb_mask)
+
+    #plt.figure(figsize=(10, 10))
+    #plt.imshow(mask_img.numpy())
+    #plt.axis('off')
+    #plt.savefig(os.path.join(output_dir, 'mask.jpg'), bbox_inches="tight", dpi=300, pad_inches=0.0)
 
     json_data = [{
         'value': value,
@@ -197,7 +205,7 @@ def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, outp
         bbox_inches="tight", dpi=300, pad_inches=0.0
     )
 
-    save_mask_data(output_dir, masks, boxes_filt, pred_phrases)
+    save_mask_data(image, output_dir, masks, boxes_filt, pred_phrases)
     
     return len(masks)
 
