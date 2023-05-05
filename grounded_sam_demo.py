@@ -111,7 +111,7 @@ def show_box(box, ax, label):
     ax.text(x0, y0, label)
 
 
-def save_mask_data(image, output_dir, mask_list, box_list, label_list):
+def save_mask_data(filename, image, output_dir, mask_list, box_list, label_list):
     value = 0  # 0 for background
     
     mask_img = torch.zeros(mask_list.shape[-2:])
@@ -123,7 +123,8 @@ def save_mask_data(image, output_dir, mask_list, box_list, label_list):
     masked_image[mask_img == 0] = [255, 255, 255]
 
     rgb_mask = cv2.cvtColor(masked_image, cv2.COLOR_BGR2RGB)
-    cv2.imwrite(os.path.join(output_dir, 'mask.jpg'), rgb_mask)
+    output_name = filename + '_masked.jpg'
+    cv2.imwrite(os.path.join(output_dir, output_name), rgb_mask)
 
     #plt.figure(figsize=(10, 10))
     #plt.imshow(mask_img.numpy())
@@ -146,9 +147,13 @@ def save_mask_data(image, output_dir, mask_list, box_list, label_list):
         })
     with open(os.path.join(output_dir, 'mask.json'), 'w') as f:
         json.dump(json_data, f)
+    
+    return json_data
 
 def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, output_dir, box_threshold, text_threshold, text_prompt, device):
     
+    filename, extension = os.path.splitext(os.path.basename(image_path))
+
     # make dir
     os.makedirs(output_dir, exist_ok=True) # output_dir placed in the gdrive
     # load image
@@ -161,7 +166,7 @@ def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, outp
     model = load_model_hf(config_file, ckpt_repo_id, ckpt_filenmae)
 
     # visualize raw image
-    image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
+    #image_pil.save(os.path.join(output_dir, "raw_image.jpg"))
 
     # run grounding dino model
     boxes_filt, pred_phrases = get_grounding_output(
@@ -192,6 +197,7 @@ def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, outp
     )
     
     # draw output image
+    output_image = filename + '_grounded_sam_output.jpg'
     plt.figure(figsize=(10, 10))
     plt.imshow(image)
     for mask in masks:
@@ -201,13 +207,13 @@ def gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, outp
 
     plt.axis('off')
     plt.savefig(
-        os.path.join(output_dir, "grounded_sam_output.jpg"), 
+        os.path.join(output_dir, output_image), 
         bbox_inches="tight", dpi=300, pad_inches=0.0
     )
 
-    save_mask_data(image, output_dir, masks, boxes_filt, pred_phrases)
+    json_data = save_mask_data(filename, image, output_dir, masks, boxes_filt, pred_phrases)
     
-    return len(masks)
+    return json_data
 
 
 if __name__ == "__main__":

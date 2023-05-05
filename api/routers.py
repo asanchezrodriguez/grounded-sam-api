@@ -22,7 +22,7 @@ async def mask(request: Request):
     device  = "cuda"
 
     print("[START] masking process")
-    num_masks_detected = gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, output_dir, box_threshold, text_threshold, text_prompt, device)
+    json_data = gsam_main(config_file, grounded_checkpoint, sam_checkpoint, image_path, output_dir, box_threshold, text_threshold, text_prompt, device)
     print("[END] masking process")
 
-    return {"statusCode": 200, "num_mask_detected": num_masks_detected}
+    return {"statusCode": 200, "results": json_data}
